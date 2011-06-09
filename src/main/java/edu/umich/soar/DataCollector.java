@@ -81,9 +81,10 @@ import sml.ClientAnalyzedXML;
  * <p>
  * Data columns collected:
  * <table>
- * <th><td>Header</td><td>Description and Units</td>
- * <td>Notes</td>
- * </th>
+ * <tr>
+ * <th>Header<th>Description and Units</th>
+ * <th>Notes</th>
+ * </td>
  * <tr><td>agent</td><td>string name</td>
  * <td></td>
  * </tr>
@@ -94,34 +95,34 @@ import sml.ClientAnalyzedXML;
  * <td>decision cycle of the collection</td>
  * </tr>
  * <tr><td>kernel msec</td><td>kernel cpu time milliseconds</td>
- * <td></td>
+ * <td>resets on each call to collect</td>
  * </tr>
- * <tr><td>avg msec/dc</td><td>average amount of milliseconds per decision cycle</td>
- * <td></td>
+ * <tr><td>avg msec/dc</td><td>average amount of kernel time milliseconds per decision cycle</td>
+ * <td>resets on each call to collect</td>
  * </tr>
- * <tr><td>cpu msec</td><td>total cpu time milliseconds</td>
- * <td></td>
+ * <tr><td>cpu msec</td><td>cpu time milliseconds</td>
+ * <td>resets on each call to collect</td>
  * </tr>
  * <tr><td>pf total</td><td>Total number of production fires</td>
  * <td></td>
  * </tr>
  * <tr><td>average msec/pf</td><td>average number of milliseconds per production firing</td>
- * <td></td>
+ * <td>resets on each call to collect</td>
  * </tr>
  * <tr><td>wm current</td><td>current working memory size</td>
  * <td></td>
  * </tr>
  * <tr><td>wm mean</td><td>mean working memory size (wme count)</td>
- * <td></td>
+ * <td>resets on each call to collect</td>
  * </tr>
  * <tr><td>wm max</td><td>maximum working memory size (wme count)</td>
  * <td></td>
  * </tr>
  * <tr><td>wm additions</td><td>number of working memory element additions</td>
- * <td></td>
+ * <td>resets on each call to collect</td>
  * </tr>
  * <tr><td>wm removals</td><td>number of working memory element removals</td>
- * <td></td>
+ * <td>resets on each call to collect</td>
  * </tr>
  * <tr><td>max dc time cycle</td><td>the cycle number that reported the longest delay</td>
  * <td>resets on each call to collect</td>
@@ -141,34 +142,34 @@ import sml.ClientAnalyzedXML;
  * <tr><td>max dc pf value</td><td>the number of production firings reported by the max cycle</td>
  * <td>resets on each call to collect</td>
  * </tr>
- * <tr><td>epmem time</td><td>time spent in episodic memory</td>
+ * <tr><td>epmem time</td><td>time spent in episodic memory in milliseconds</td>
  * <td></td>
  * </tr>
  * <tr><td>epmem max time cycle</td><td>the cycle number that reported the most time spent in epmem</td>
  * <td></td>
  * </tr>
- * <tr><td>epmem max time value</td><td>the value of the time spent by the max cycle</td>
+ * <tr><td>epmem max time value</td><td>the value of the time spent by the max cycle in milliseconds</td>
  * <td></td>
  * </tr>
- * <tr><td>epmem bytes</td><td>amount of memory used by epmem</td>
+ * <tr><td>epmem and smem bytes</td><td>amount of memory used by epmem and smem</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>epmem queries</td><td>epmem queries</td>
  * <td></td>
  * </tr>
  * <tr><td>epmem stores</td><td>number of epmem stores</td>
  * <td></td>
  * </tr>
- * <tr><td>epmem time per dc</td><td>average time spent in epmem per decision cycle</td>
+ * <tr><td>epmem time per dc</td><td>average time spent in epmem per decision cycle in milliseconds</td>
  * <td></td>
  * </tr>
- * <tr><td>smem time</td><td>time spent in semantic memory</td>
+ * <tr><td>smem time</td><td>time spent in semantic memory in milliseconds</td>
  * <td></td>
  * </tr>
  * <tr><td>smem max time cycle</td><td>the cycle number that reported the most time spent in smem</td>
  * <td></td>
  * </tr>
- * <tr><td>smem max time value</td><td>the value of the time spent by the max cycle</td>
- * <td></td>
- * </tr>
- * <tr><td>smem bytes</td><td>amount of bytes used by smem</td>
+ * <tr><td>smem max time value</td><td>the value of the time spent by the max cycle in milliseconds</td>
  * <td></td>
  * </tr>
  * <tr><td>smem retrieves</td><td>smem retrieval count</td>
@@ -180,7 +181,7 @@ import sml.ClientAnalyzedXML;
  * <tr><td>smem stores</td><td>number of smem stores</td>
  * <td></td>
  * </tr>
- * <tr><td>smem time per dc</td><td>average time spent in smem per decision cycle</td>
+ * <tr><td>smem time per dc</td><td>average time spent in smem per decision cycle in milliseconds</td>
  * <td></td>
  * </tr>
  * </table>
@@ -208,8 +209,14 @@ public class DataCollector
     private PrintWriter pout;
     
     private int count;              // reinitialized in reset()
-    private double lastSmemTime;    // reinitialized in reset()
-    private double lastEpmemTime;   // reinitialized in reset()
+    private double lastKmsecTime;   // reinitialized in reset()
+    private long lastPfCount;       // reinitialized in reset()
+    private long lastWmCount;       // reinitialized in reset()
+    private long lastWmAdd;         // reinitialized in reset()
+    private long lastWmRem;         // reinitialized in reset()
+    private double lastCpumsecTime; // reinitialized in reset()
+    private double lastSmemTimeMsec;    // reinitialized in reset()
+    private double lastEpmemTimeMsec;   // reinitialized in reset()
     private long lastDc;            // reinitialized in reset()
     private long lastTimeMillis;    // reinitialized in reset()
     private long offset;            // reinitialized in reset()
@@ -242,13 +249,13 @@ public class DataCollector
         addStat(headerBuilder, "epmem time", formatBuilder, "%f");
         addStat(headerBuilder, "epmem max time cycle", formatBuilder, "%d");
         addStat(headerBuilder, "epmem max time value", formatBuilder, "%f");
-        addStat(headerBuilder, "epmem bytes", formatBuilder, "%d");
+        addStat(headerBuilder, "epmem and smem bytes", formatBuilder, "%d");
+        addStat(headerBuilder, "epmem queries", formatBuilder, "%d");
         addStat(headerBuilder, "epmem stores", formatBuilder, "%d");
         addStat(headerBuilder, "epmem time per dc", formatBuilder, "%f");
         addStat(headerBuilder, "smem time", formatBuilder, "%f");
         addStat(headerBuilder, "smem max time cycle", formatBuilder, "%d");
         addStat(headerBuilder, "smem max time value", formatBuilder, "%f");
-        addStat(headerBuilder, "smem bytes", formatBuilder, "%d");
         addStat(headerBuilder, "smem retrieves", formatBuilder, "%d");
         addStat(headerBuilder, "smem queries", formatBuilder, "%d");
         addStat(headerBuilder, "smem stores", formatBuilder, "%d");
@@ -287,8 +294,14 @@ public class DataCollector
     {
         flush();
         count = 0;
-        lastSmemTime = 0;
-        lastEpmemTime = 0;
+        lastKmsecTime = 0;
+        lastCpumsecTime = 0;
+        lastPfCount = 0;
+        lastWmCount = 0;
+        lastWmAdd = 0;
+        lastWmRem = 0;
+        lastSmemTimeMsec = 0;
+        lastEpmemTimeMsec = 0;
         lastDc = 0;
         lastTimeMillis = 0;
         offset = 0;
@@ -485,15 +498,40 @@ public class DataCollector
             lastDc = dc;
             if (dc < 1)
                 return;
-            double kmsec = response.GetArgFloat(sml.sml_Names.getKParamStatsKernelCPUTime(), 0) / 1000;
-            double tmsec = response.GetArgFloat(sml.sml_Names.getKParamStatsTotalCPUTime(), 0) / 1000;
-            long pf = response.GetArgInt(sml.sml_Names.getKParamStatsProductionFiringCount(), 0L);
-            long wmcount = response.GetArgInt(sml.sml_Names.getKParamStatsWmeCount(), 0L);
-            double wmmean = response.GetArgFloat(sml.sml_Names.getKParamStatsWmeCountAverage(), 0);
-            long wmmax = response.GetArgInt(sml.sml_Names.getKParamStatsWmeCountMax(), 0L);
             
-            long wmadd = response.GetArgInt(sml.sml_Names.getKParamStatsWmeCountAddition(), 0L);
-            long wmrem = response.GetArgInt(sml.sml_Names.getKParamStatsWmeCountRemoval(), 0L);
+            // getKParamStatsKernelCPUTime returns seconds, divide to get msec
+            double kmsec = response.GetArgFloat(sml.sml_Names.getKParamStatsKernelCPUTime(), 0) / 1000;
+            double deltaKmsecTime = kmsec - lastKmsecTime;
+            lastSmemTimeMsec = kmsec;
+            double kmsecTotalTimePerDc = deltaDc > 0 ? deltaKmsecTime / deltaDc : 0;
+            
+            // getKParamStatsTotalCPUTime returns seconds, divide to get msec
+            double tmsec = response.GetArgFloat(sml.sml_Names.getKParamStatsTotalCPUTime(), 0) / 1000;
+            double deltaCpumsecTime = tmsec - lastCpumsecTime;
+            lastCpumsecTime = tmsec;
+
+            long pf = response.GetArgInt(sml.sml_Names.getKParamStatsProductionFiringCount(), 0L);
+            long deltaPfCount = pf - lastPfCount;
+            lastPfCount = pf;
+            double meanMsecPerPf = deltaPfCount > 0 ? deltaKmsecTime / deltaPfCount : 0;
+                
+            long wmcount = response.GetArgInt(sml.sml_Names.getKParamStatsWmeCount(), 0L);
+            
+            // We want wmmean reset each call to collect so we can't use the stat
+            //double wmmean = response.GetArgFloat(sml.sml_Names.getKParamStatsWmeCountAverage(), 0);
+            long deltaWmCount = wmcount - lastWmCount;
+            lastWmCount = wmcount;
+            double meanWmCountPerDc = deltaDc > 0 ? deltaWmCount / deltaDc : 0;
+            
+            long wmmax = response.GetArgInt(sml.sml_Names.getKParamStatsWmeCountMax(), 0L);
+
+            long wmaddTotal = response.GetArgInt(sml.sml_Names.getKParamStatsWmeCountAddition(), 0L);
+            long deltaWmAdd = wmaddTotal - lastWmAdd;
+            lastWmAdd = wmaddTotal;
+            
+            long wmremTotal = response.GetArgInt(sml.sml_Names.getKParamStatsWmeCountRemoval(), 0L);
+            long deltaWmRem = wmremTotal - lastWmRem;
+            lastWmRem = wmremTotal;
             
             long maxdctimec = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleTimeCycle(), 0L);
             long maxdctimev = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleTimeValueUSec(), 0L);
@@ -503,48 +541,52 @@ public class DataCollector
             long maxdcpfcv = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleFireCountValue(), 0L);
             
             long epmemMaxTimeCycle = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleEpMemTimeCycle(), 0);
-            double epmemMaxTimeValue = response.GetArgFloat(sml.sml_Names.getKParamStatsMaxDecisionCycleEpMemTimeValueSec(), 0);
+            double epmemMaxTimeValueMsec = response.GetArgFloat(sml.sml_Names.getKParamStatsMaxDecisionCycleEpMemTimeValueSec(), 0) * 1000;
             long smemMaxTimeCycle = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleSMemTimeCycle(), 0);
-            double smemMaxTimeValue = response.GetArgFloat(sml.sml_Names.getKParamStatsMaxDecisionCycleSMemTimeValueSec(), 0);
+            double smemMaxTimeValueMsec = response.GetArgFloat(sml.sml_Names.getKParamStatsMaxDecisionCycleSMemTimeValueSec(), 0) * 1000;
             
             Scanner epmemTimeScanner = new Scanner(agent.ExecuteCommandLine("epmem -t"));
-            double epmemTime = epmemTimeScanner.skip(".+: ").nextDouble();
+            // epmem and smem timers report seconds
+            double epmemTimeMsec = epmemTimeScanner.skip(".+: ").nextDouble() * 1000;
             
             Scanner epmemStatsScanner = new Scanner(agent.ExecuteCommandLine("epmem -S"));
             long epmemStores = epmemStatsScanner.skip(".+: ").nextLong(); // Time == Stores (more or less)
-            epmemStatsScanner.nextLine();
+            epmemStatsScanner.nextLine(); // Time (Stores)
             epmemStatsScanner.nextLine(); // SQLite version
-            long epmemBytes = epmemStatsScanner.skip(".+: ").nextLong(); 
+            long epmemAndSmemBytes = epmemStatsScanner.skip(".+: ").nextLong(); 
+            epmemStatsScanner.nextLine(); // Bytes
+            epmemStatsScanner.nextLine(); // Memory Highwater
+            long epmemQueries = epmemStatsScanner.skip(".+: ").nextLong(); 
             
             Scanner smemTimeScanner = new Scanner(agent.ExecuteCommandLine("smem -t"));
-            double smemTime = smemTimeScanner.skip(".+: ").nextDouble(); 
+            // epmem and smem timers report seconds
+            double smemTimeMsec = smemTimeScanner.skip(".+: ").nextDouble() * 1000; 
     
             Scanner smemStatsScanner = new Scanner(agent.ExecuteCommandLine("smem -S"));
             smemStatsScanner.nextLine(); // SQLite version
-            long smemBytes = smemStatsScanner.skip(".+: ").nextLong();
-            smemStatsScanner.nextLine();
+            smemStatsScanner.nextLine(); // Bytes
             smemStatsScanner.nextLine(); // Memory Highwater
             long smemRetrieves = smemStatsScanner.skip(".+: ").nextLong();
-            smemStatsScanner.nextLine();
+            smemStatsScanner.nextLine(); // Retrieves
             long smemQueries = smemStatsScanner.skip(".+: ").nextLong();
-            smemStatsScanner.nextLine();
+            smemStatsScanner.nextLine(); // Queries
             long smemStores = smemStatsScanner.skip(".+: ").nextLong();
             
             double wallClock = (System.currentTimeMillis() - offset) / 1000.0;
             
-            double deltaSmemTime = smemTime - lastSmemTime;
-            lastSmemTime = smemTime;
-            double smemTotalTimePerDc = deltaDc > 0 ? deltaSmemTime / deltaDc : 0;
+            double deltaSmemTimeMsec = smemTimeMsec - lastSmemTimeMsec;
+            lastSmemTimeMsec = smemTimeMsec;
+            double smemTimeMsecPerDc = deltaDc > 0 ? deltaSmemTimeMsec / deltaDc : 0;
 
-            double deltaEpmemTime = epmemTime - lastEpmemTime;
-            lastEpmemTime = epmemTime;
-            double epmemTotalTimePerDc = deltaDc > 0 ? deltaEpmemTime / deltaDc : 0;
+            double deltaEpmemTimeMsec = epmemTimeMsec - lastEpmemTimeMsec;
+            lastEpmemTimeMsec = epmemTimeMsec;
+            double epmemTimeMsecPerDc = deltaDc > 0 ? deltaEpmemTimeMsec / deltaDc : 0;
             
-            String out = String.format(FORMAT, agent.GetAgentName(), wallClock, dc, kmsec, (kmsec / dc), 
-                    tmsec, pf, (kmsec / pf), wmcount, wmmean, wmmax, wmadd, wmrem,
+            String out = String.format(FORMAT, agent.GetAgentName(), wallClock, dc, deltaKmsecTime, kmsecTotalTimePerDc, 
+                    deltaCpumsecTime, pf, meanMsecPerPf, wmcount, meanWmCountPerDc, wmmax, deltaWmAdd, deltaWmRem,
                     maxdctimec, maxdctimev, maxdcwmcc, maxdcwmcv, maxdcpfcc, maxdcpfcv,
-                    epmemTime, epmemMaxTimeCycle, epmemMaxTimeValue, epmemBytes, epmemStores, epmemTotalTimePerDc, 
-                    smemTime, smemMaxTimeCycle, smemMaxTimeValue, smemBytes, smemRetrieves, smemQueries, smemStores, smemTotalTimePerDc);
+                    epmemTimeMsec, epmemMaxTimeCycle, epmemMaxTimeValueMsec, epmemAndSmemBytes, epmemQueries, epmemStores, epmemTimeMsecPerDc, 
+                    smemTimeMsec, smemMaxTimeCycle, smemMaxTimeValueMsec, smemRetrieves, smemQueries, smemStores, smemTimeMsecPerDc);
             pout.print(out);
             //System.out.println(out);
             
