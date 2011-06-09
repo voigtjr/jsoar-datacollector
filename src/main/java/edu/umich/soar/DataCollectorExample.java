@@ -22,7 +22,6 @@ public class DataCollectorExample
         StringBuilder productions = new StringBuilder(sp.getPrefix());
         productions.append("share/soar/Demos/arithmetic/arithmetic.soar");
         
-        // Using arithmetic because it enables epmem
         // TODO: Need a custom agent that generates some more interesting stats
         if (!agent.LoadProductions(productions.toString()))
         {

@@ -79,7 +79,111 @@ import sml.ClientAnalyzedXML;
  * to collect after that until onStart is called.
  * 
  * <p>
- * Data columns collected: TODO
+ * Data columns collected:
+ * <table>
+ * <th><td>Header</td><td>Description and Units</td>
+ * <td>Notes</td>
+ * </th>
+ * <tr><td>agent</td><td>string name</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>wall clock</td><td>float seconds</td>
+ * <td>time stamp for each data collection</td>
+ * </tr>
+ * <tr><td>dc num</td><td>decision cycle number</td>
+ * <td>decision cycle of the collection</td>
+ * </tr>
+ * <tr><td>kernel msec</td><td>kernel cpu time milliseconds</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>avg msec/dc</td><td>average amount of milliseconds per decision cycle</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>cpu msec</td><td>total cpu time milliseconds</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>pf total</td><td>Total number of production fires</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>average msec/pf</td><td>average number of milliseconds per production firing</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>wm current</td><td>current working memory size</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>wm mean</td><td>mean working memory size (wme count)</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>wm max</td><td>maximum working memory size (wme count)</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>wm additions</td><td>number of working memory element additions</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>wm removals</td><td>number of working memory element removals</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>max dc time cycle</td><td>the cycle number that reported the longest delay</td>
+ * <td>resets on each call to collect</td>
+ * </tr>
+ * <tr><td>max dc time value</td><td>the time value of the delay of the longest cycle</td>
+ * <td>resets on each call to collect</td>
+ * </tr>
+ * <tr><td>max dc changes cycle</td><td>the cycle number that reported the most wme changes</td>
+ * <td>resets on each call to collect</td>
+ * </tr>
+ * <tr><td>max dc changes value</td><td>the number of wme changes reported by the max cycle</td>
+ * <td>resets on each call to collect</td>
+ * </tr>
+ * <tr><td>max dc pf cycle</td><td>the cycle number that reported the most production firings</td>
+ * <td>resets on each call to collect</td>
+ * </tr>
+ * <tr><td>max dc pf value</td><td>the number of production firings reported by the max cycle</td>
+ * <td>resets on each call to collect</td>
+ * </tr>
+ * <tr><td>epmem time</td><td>time spent in episodic memory</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>epmem max time cycle</td><td>the cycle number that reported the most time spent in epmem</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>epmem max time value</td><td>the value of the time spent by the max cycle</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>epmem bytes</td><td>amount of memory used by epmem</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>epmem stores</td><td>number of epmem stores</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>epmem time per dc</td><td>average time spent in epmem per decision cycle</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>smem time</td><td>time spent in semantic memory</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>smem max time cycle</td><td>the cycle number that reported the most time spent in smem</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>smem max time value</td><td>the value of the time spent by the max cycle</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>smem bytes</td><td>amount of bytes used by smem</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>smem retrieves</td><td>smem retrieval count</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>smem queries</td><td>smem query count</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>smem stores</td><td>number of smem stores</td>
+ * <td></td>
+ * </tr>
+ * <tr><td>smem time per dc</td><td>average time spent in smem per decision cycle</td>
+ * <td></td>
+ * </tr>
+ * </table>
  * 
  * @author Jonathan Voigt <voigtjr@gmail.com>
  */
@@ -119,9 +223,9 @@ public class DataCollector
         addStat(headerBuilder, "agent", formatBuilder, "%s");
         addStat(headerBuilder, "wall clock", formatBuilder, "%f");
         addStat(headerBuilder, "dc num", formatBuilder, "%d");
-        addStat(headerBuilder, "kernel sec", formatBuilder, "%f");
+        addStat(headerBuilder, "kernel msec", formatBuilder, "%f");
         addStat(headerBuilder, "avg msec/dc", formatBuilder, "%f");
-        addStat(headerBuilder, "cpu sec", formatBuilder, "%f");
+        addStat(headerBuilder, "cpu msec", formatBuilder, "%f");
         addStat(headerBuilder, "pf total", formatBuilder, "%d");
         addStat(headerBuilder, "average msec/pf", formatBuilder, "%f");
         addStat(headerBuilder, "wm current", formatBuilder, "%d");
@@ -381,8 +485,8 @@ public class DataCollector
             lastDc = dc;
             if (dc < 1)
                 return;
-            double ksec = response.GetArgFloat(sml.sml_Names.getKParamStatsKernelCPUTime(), 0);
-            double tsec = response.GetArgFloat(sml.sml_Names.getKParamStatsTotalCPUTime(), 0);
+            double kmsec = response.GetArgFloat(sml.sml_Names.getKParamStatsKernelCPUTime(), 0) / 1000;
+            double tmsec = response.GetArgFloat(sml.sml_Names.getKParamStatsTotalCPUTime(), 0) / 1000;
             long pf = response.GetArgInt(sml.sml_Names.getKParamStatsProductionFiringCount(), 0L);
             long wmcount = response.GetArgInt(sml.sml_Names.getKParamStatsWmeCount(), 0L);
             double wmmean = response.GetArgFloat(sml.sml_Names.getKParamStatsWmeCountAverage(), 0);
@@ -436,8 +540,8 @@ public class DataCollector
             lastEpmemTime = epmemTime;
             double epmemTotalTimePerDc = deltaDc > 0 ? deltaEpmemTime / deltaDc : 0;
             
-            String out = String.format(FORMAT, agent.GetAgentName(), wallClock, dc, ksec, ((ksec * 1000.0) / dc), 
-                    tsec, pf, ((ksec * 1000.0) / pf), wmcount, wmmean, wmmax, wmadd, wmrem,
+            String out = String.format(FORMAT, agent.GetAgentName(), wallClock, dc, kmsec, (kmsec / dc), 
+                    tmsec, pf, (kmsec / pf), wmcount, wmmean, wmmax, wmadd, wmrem,
                     maxdctimec, maxdctimev, maxdcwmcc, maxdcwmcv, maxdcpfcc, maxdcpfcv,
                     epmemTime, epmemMaxTimeCycle, epmemMaxTimeValue, epmemBytes, epmemStores, epmemTotalTimePerDc, 
                     smemTime, smemMaxTimeCycle, smemMaxTimeValue, smemBytes, smemRetrieves, smemQueries, smemStores, smemTotalTimePerDc);
