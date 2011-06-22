@@ -103,8 +103,8 @@ import sml.ClientAnalyzedXML;
  * <tr><td>cpu msec</td><td>cpu time milliseconds</td>
  * <td>resets on each call to collect</td>
  * </tr>
- * <tr><td>pf total</td><td>Total number of production fires</td>
- * <td></td>
+ * <tr><td>pf total</td><td>Productions fired since last data collection</td>
+ * <td>resets on each call to collect</td>
  * </tr>
  * <tr><td>average msec/pf</td><td>average number of milliseconds per production firing</td>
  * <td>resets on each call to collect</td>
@@ -146,10 +146,10 @@ import sml.ClientAnalyzedXML;
  * <td></td>
  * </tr>
  * <tr><td>epmem max time cycle</td><td>the cycle number that reported the most time spent in epmem</td>
- * <td></td>
+ * <td>resets on each call to collect</td>
  * </tr>
  * <tr><td>epmem max time value</td><td>the value of the time spent by the max cycle in milliseconds</td>
- * <td></td>
+ * <td>resets on each call to collect</td>
  * </tr>
  * <tr><td>epmem and smem bytes</td><td>amount of memory used by epmem and smem</td>
  * <td></td>
@@ -161,16 +161,16 @@ import sml.ClientAnalyzedXML;
  * <td></td>
  * </tr>
  * <tr><td>epmem time per dc</td><td>average time spent in epmem per decision cycle in milliseconds</td>
- * <td></td>
+ * <td>resets on each call to collect</td>
  * </tr>
  * <tr><td>smem time</td><td>time spent in semantic memory in milliseconds</td>
  * <td></td>
  * </tr>
  * <tr><td>smem max time cycle</td><td>the cycle number that reported the most time spent in smem</td>
- * <td></td>
+ * <td>resets on each call to collect</td>
  * </tr>
  * <tr><td>smem max time value</td><td>the value of the time spent by the max cycle in milliseconds</td>
- * <td></td>
+ * <td>resets on each call to collect</td>
  * </tr>
  * <tr><td>smem retrieves</td><td>smem retrieval count</td>
  * <td></td>
@@ -182,7 +182,7 @@ import sml.ClientAnalyzedXML;
  * <td></td>
  * </tr>
  * <tr><td>smem time per dc</td><td>average time spent in smem per decision cycle in milliseconds</td>
- * <td></td>
+ * <td>resets on each call to collect</td>
  * </tr>
  * </table>
  * 
@@ -583,7 +583,7 @@ public class DataCollector
             double epmemTimeMsecPerDc = deltaDc > 0 ? deltaEpmemTimeMsec / deltaDc : 0;
             
             String out = String.format(FORMAT, agent.GetAgentName(), wallClock, dc, deltaKmsecTime, kmsecTotalTimePerDc, 
-                    deltaCpumsecTime, pf, meanMsecPerPf, wmcount, meanWmCountPerDc, wmmax, deltaWmAdd, deltaWmRem,
+                    deltaCpumsecTime, deltaPfCount, meanMsecPerPf, wmcount, meanWmCountPerDc, wmmax, deltaWmAdd, deltaWmRem,
                     maxdctimec, maxdctimev, maxdcwmcc, maxdcwmcv, maxdcpfcc, maxdcpfcv,
                     epmemTimeMsec, epmemMaxTimeCycle, epmemMaxTimeValueMsec, epmemAndSmemBytes, epmemQueries, epmemStores, epmemTimeMsecPerDc, 
                     smemTimeMsec, smemMaxTimeCycle, smemMaxTimeValueMsec, smemRetrieves, smemQueries, smemStores, smemTimeMsecPerDc);
