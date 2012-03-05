@@ -3,10 +3,10 @@
 	<classpathentry kind="src" path="src/main/java"/>
 	<classpathentry kind="src" path="src/main/resources"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
-	<classpathentry kind="var" path="SML"/>
 	<classpathentry kind="lib" path="lib/log4j-1.2.15.jar"/>
 	<classpathentry kind="lib" path="lib/commons-logging-1.1.1.jar"/>
 	<classpathentry kind="lib" path="lib/guava-r09.jar"/>
-	<classpathentry kind="var" path="SML_JAVA"/>
+	<classpathentry kind="var" path="SOAR/java/sml.jar"/>
+	<classpathentry kind="var" path="SOAR/java/soar-smljava-9.3.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
