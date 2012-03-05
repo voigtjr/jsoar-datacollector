@@ -1,5 +1,0 @@
-This is a very simple data collection utility for Soar agents.
-
-This project has two external dependencies:
-	sml.jar
-	soar-smljava-<version>.jar
