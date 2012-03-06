@@ -1,14 +1,68 @@
-soar-datacollector is a simple performance data collection utility for Soar agents. soar-datacollector is a Java library that needs to be included directly in your environment to work.
+soar-datacollector is a simple performance data collection utility for [Soar](http://sitemaker.umich.edu/soar/home) agents. soar-datacollector is a Java library that needs to be included directly in your environment to work.
+
+More general information is in the [slides](https://raw.github.com/voigtjr/soar-datacollector/master/doc/sdc-soar-workshop-31.pdf) from the [31st Soar Workshop](https://web.eecs.umich.edu/~soar/workshop/) (2011).
 
 # Usage
 
-TODO
+**Create one DataCollector instance** for all agents: 
+
+    DataCollector dc = new DataCollector;
+
+**Optionally configure** (default: 5000 cycles):
+
+*To collect based on decision cycles*:
+
+    dc.setPeriodCycles(10); // onUpdateEvent returns true every 10 decisions
+
+*To collect based on wall time*:
+
+    dc.setPeriodMillis(500); // onUpdateEvent returns true after every 500ms
+
+**Implement callbacks** (or add to existing implementations):
+
+*Start event*:
+
+    // Kernel.RegisterForSystemEvent()
+    // smlSystemEventId.smlEVENT_SYSTEM_START
+    dc.onStart();
+
+*After all agents pass output*:
+
+    // Kernel.RegisterForUpdateEvent()
+    // smlUpdateEventId.smlEVENT_AFTER_ALL_OUTPUT_PHASES
+    if (dc.onUpdateEvent()) // once per decision cycle
+    {
+        // onUpdateEvent => true means call collect
+        for (Agent agent : agents)
+        {
+            dc.collect(agent); // for each agent
+        }
+    }
+    
+    // possibly call to prevent catastrophic loss in event of crash
+    // dc.flush()
+    // but call it in a period greater than one decision cycle
+
+*Stop event*:
+
+    // Kernel.RegisterForSystemEvent()
+    // smlSystemEventId.smlEVENT_SYSTEM_STOP
+    dc.stop();
+    for (Agent agent : agents)
+    {
+        dc.collect(agent); // each agent
+    }
+
+## Example
+
+A [full example](https://github.com/voigtjr/soar-datacollector/blob/master/src/main/java/edu/umich/soar/DataCollectorExample.java) is included in the project source.
 
 # Dependencies
 
 soar-datacollector needs two jars found in [Soar 9.3.1](http://soar.googlecode.com/):
-    * sml.jar
-    * soar-smljava-9.3.1.jar
+
+* `sml.jar`
+* `soar-smljava-9.3.1.jar`
 
 *The build instructions below refer to the new_build_structure branch of Soar. I will remove this message after it is merged in to the trunk.*
 
@@ -22,12 +76,13 @@ Note that the soar-smljava jar is not built by default, produce it by running:
 Eclipse project settings are distributed with this project. To build, the SOAR variable inside Eclipse's build path system must be set to the folder where Soar was built or extracted to. It will look in to the java subfolder for the two jar dependencies it needs.
 
 To set the SOAR variable, follow this path through Eclipse:
-    * soar-datacollector build path
-    * Libraries tab,
-    * Add Variable
-    * Configure Variables
-    * New Folder
-    * *SOAR*: */path/to/soar*
+
+* soar-datacollector build path
+* Libraries tab,
+* Add Variable
+* Configure Variables
+* New Folder
+* `SOAR`: `/path/to/soar`
 
 # License
 
