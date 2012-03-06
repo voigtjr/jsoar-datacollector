@@ -26,13 +26,14 @@ import java.io.PrintWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Scanner;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import sml.Agent;
-import sml.ClientAnalyzedXML;
+import org.jsoar.kernel.Agent;
+import org.jsoar.kernel.SoarProperties;
+import org.jsoar.kernel.smem.SemanticMemory;
+import org.jsoar.kernel.smem.SemanticMemoryStatistics;
+import org.jsoar.util.properties.PropertyManager;
 
 /**
  * <p>
@@ -216,7 +217,7 @@ public class DataCollector
     private long lastWmRem;         // reinitialized in reset()
     private double lastCpumsecTime; // reinitialized in reset()
     private double lastSmemTimeMsec;    // reinitialized in reset()
-    private double lastEpmemTimeMsec;   // reinitialized in reset()
+    // TODO private double lastEpmemTimeMsec;   // reinitialized in reset()
     private long lastDc;            // reinitialized in reset()
     private long lastTimeMillis;    // reinitialized in reset()
     private long offset;            // reinitialized in reset()
@@ -240,19 +241,19 @@ public class DataCollector
         addStat(headerBuilder, "wm max", formatBuilder, "%d");
         addStat(headerBuilder, "wm additions", formatBuilder, "%d");
         addStat(headerBuilder, "wm removals", formatBuilder, "%d");
-        addStat(headerBuilder, "max dc time cycle", formatBuilder, "%d");
-        addStat(headerBuilder, "max dc time value", formatBuilder, "%d");
-        addStat(headerBuilder, "max dc changes cycle", formatBuilder, "%d");
-        addStat(headerBuilder, "max dc changes value", formatBuilder, "%d");
-        addStat(headerBuilder, "max dc pf cycle", formatBuilder, "%d");
-        addStat(headerBuilder, "max dc pf value", formatBuilder, "%d");
-        addStat(headerBuilder, "epmem time", formatBuilder, "%f");
-        addStat(headerBuilder, "epmem max time cycle", formatBuilder, "%d");
-        addStat(headerBuilder, "epmem max time value", formatBuilder, "%f");
-        addStat(headerBuilder, "epmem and smem bytes", formatBuilder, "%d");
-        addStat(headerBuilder, "epmem queries", formatBuilder, "%d");
-        addStat(headerBuilder, "epmem stores", formatBuilder, "%d");
-        addStat(headerBuilder, "epmem time per dc", formatBuilder, "%f");
+        // TODO addStat(headerBuilder, "max dc time cycle", formatBuilder, "%d");
+        // TODO addStat(headerBuilder, "max dc time value", formatBuilder, "%d");
+        // TODO addStat(headerBuilder, "max dc changes cycle", formatBuilder, "%d");
+        // TODO addStat(headerBuilder, "max dc changes value", formatBuilder, "%d");
+        // TODO addStat(headerBuilder, "max dc pf cycle", formatBuilder, "%d");
+        // TODO addStat(headerBuilder, "max dc pf value", formatBuilder, "%d");
+        // TODO addStat(headerBuilder, "epmem time", formatBuilder, "%f");
+        // TODO addStat(headerBuilder, "epmem max time cycle", formatBuilder, "%d");
+        // TODO addStat(headerBuilder, "epmem max time value", formatBuilder, "%f");
+        // TODO addStat(headerBuilder, "epmem and smem bytes", formatBuilder, "%d");
+        // TODO addStat(headerBuilder, "epmem queries", formatBuilder, "%d");
+        // TODO addStat(headerBuilder, "epmem stores", formatBuilder, "%d");
+        // TODO addStat(headerBuilder, "epmem time per dc", formatBuilder, "%f");
         addStat(headerBuilder, "smem time", formatBuilder, "%f");
         addStat(headerBuilder, "smem max time cycle", formatBuilder, "%d");
         addStat(headerBuilder, "smem max time value", formatBuilder, "%f");
@@ -301,7 +302,7 @@ public class DataCollector
         lastWmAdd = 0;
         lastWmRem = 0;
         lastSmemTimeMsec = 0;
-        lastEpmemTimeMsec = 0;
+        // TODO lastEpmemTimeMsec = 0;
         lastDc = 0;
         lastTimeMillis = 0;
         offset = 0;
@@ -490,32 +491,31 @@ public class DataCollector
                 pout.println(HEADER);
             }
     
-            ClientAnalyzedXML response = new ClientAnalyzedXML();
-            agent.ExecuteCommandLineXML("stats", response);
+            final PropertyManager props = agent.getProperties();
             
-            long dc = response.GetArgInt(sml.sml_Names.getKParamStatsCycleCountDecision(), 0L);
+            long dc = props.get(SoarProperties.DECISION_PHASES_COUNT);
             long deltaDc = dc - lastDc;
             lastDc = dc;
             if (dc < 1)
                 return;
             
             // getKParamStatsKernelCPUTime returns seconds, divide to get msec
-            double kmsec = response.GetArgFloat(sml.sml_Names.getKParamStatsKernelCPUTime(), 0) / 1000;
+            double kmsec = agent.getTotalKernelTimer().getTotalSeconds();
             double deltaKmsecTime = kmsec - lastKmsecTime;
             lastSmemTimeMsec = kmsec;
             double kmsecTotalTimePerDc = deltaDc > 0 ? deltaKmsecTime / deltaDc : 0;
             
             // getKParamStatsTotalCPUTime returns seconds, divide to get msec
-            double tmsec = response.GetArgFloat(sml.sml_Names.getKParamStatsTotalCPUTime(), 0) / 1000;
+            double tmsec = agent.getTotalCpuTimer().getTotalSeconds();
             double deltaCpumsecTime = tmsec - lastCpumsecTime;
             lastCpumsecTime = tmsec;
 
-            long pf = response.GetArgInt(sml.sml_Names.getKParamStatsProductionFiringCount(), 0L);
+            long pf = props.get(SoarProperties.PRODUCTION_FIRING_COUNT);
             long deltaPfCount = pf - lastPfCount;
             lastPfCount = pf;
             double meanMsecPerPf = deltaPfCount > 0 ? deltaKmsecTime / deltaPfCount : 0;
                 
-            long wmcount = response.GetArgInt(sml.sml_Names.getKParamStatsWmeCount(), 0L);
+            long wmcount = agent.getNumWmesInRete();
             
             // We want wmmean reset each call to collect so we can't use the stat
             //double wmmean = response.GetArgFloat(sml.sml_Names.getKParamStatsWmeCountAverage(), 0);
@@ -523,54 +523,49 @@ public class DataCollector
             lastWmCount = wmcount;
             double meanWmCountPerDc = deltaDc > 0 ? deltaWmCount / deltaDc : 0;
             
-            long wmmax = response.GetArgInt(sml.sml_Names.getKParamStatsWmeCountMax(), 0L);
+            long wmmax = props.get(SoarProperties.MAX_WM_SIZE);
 
-            long wmaddTotal = response.GetArgInt(sml.sml_Names.getKParamStatsWmeCountAddition(), 0L);
+            long wmaddTotal = props.get(SoarProperties.WME_ADDITION_COUNT);
             long deltaWmAdd = wmaddTotal - lastWmAdd;
             lastWmAdd = wmaddTotal;
             
-            long wmremTotal = response.GetArgInt(sml.sml_Names.getKParamStatsWmeCountRemoval(), 0L);
+            long wmremTotal = props.get(SoarProperties.WME_REMOVAL_COUNT);
             long deltaWmRem = wmremTotal - lastWmRem;
             lastWmRem = wmremTotal;
             
-            long maxdctimec = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleTimeCycle(), 0L);
-            long maxdctimev = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleTimeValueUSec(), 0L);
-            long maxdcwmcc = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleWMChangesCycle(), 0L);
-            long maxdcwmcv = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleWMChangesValue(), 0L);
-            long maxdcpfcc = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleFireCountCycle(), 0L);
-            long maxdcpfcv = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleFireCountValue(), 0L);
+            // TODO long maxdctimec = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleTimeCycle(), 0L);
+            // TODO long maxdctimev = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleTimeValueUSec(), 0L);
+            // TODO long maxdcwmcc = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleWMChangesCycle(), 0L);
+            // TODO long maxdcwmcv = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleWMChangesValue(), 0L);
+            // TODO long maxdcpfcc = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleFireCountCycle(), 0L);
+            // TODO long maxdcpfcv = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleFireCountValue(), 0L);
             
-            long epmemMaxTimeCycle = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleEpMemTimeCycle(), 0);
-            double epmemMaxTimeValueMsec = response.GetArgFloat(sml.sml_Names.getKParamStatsMaxDecisionCycleEpMemTimeValueSec(), 0) * 1000;
-            long smemMaxTimeCycle = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleSMemTimeCycle(), 0);
-            double smemMaxTimeValueMsec = response.GetArgFloat(sml.sml_Names.getKParamStatsMaxDecisionCycleSMemTimeValueSec(), 0) * 1000;
+            // TODO long epmemMaxTimeCycle = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleEpMemTimeCycle(), 0);
+            // TODO double epmemMaxTimeValueMsec = response.GetArgFloat(sml.sml_Names.getKParamStatsMaxDecisionCycleEpMemTimeValueSec(), 0) * 1000;
             
-            Scanner epmemTimeScanner = new Scanner(agent.ExecuteCommandLine("epmem -t"));
+            // TODO long smemMaxTimeCycle = response.GetArgInt(sml.sml_Names.getKParamStatsMaxDecisionCycleSMemTimeCycle(), 0);
+            // TODO double smemMaxTimeValueMsec = response.GetArgFloat(sml.sml_Names.getKParamStatsMaxDecisionCycleSMemTimeValueSec(), 0) * 1000;
+            
+            // TODO Scanner epmemTimeScanner = new Scanner(agent.ExecuteCommandLine("epmem -t"));
             // epmem and smem timers report seconds
-            double epmemTimeMsec = epmemTimeScanner.skip(".+: ").nextDouble() * 1000;
+            // TODO double epmemTimeMsec = epmemTimeScanner.skip(".+: ").nextDouble() * 1000;
             
-            Scanner epmemStatsScanner = new Scanner(agent.ExecuteCommandLine("epmem -S"));
-            long epmemStores = epmemStatsScanner.skip(".+: ").nextLong(); // Time == Stores (more or less)
-            epmemStatsScanner.nextLine(); // Time (Stores)
-            epmemStatsScanner.nextLine(); // SQLite version
-            long epmemAndSmemBytes = epmemStatsScanner.skip(".+: ").nextLong(); 
-            epmemStatsScanner.nextLine(); // Bytes
-            epmemStatsScanner.nextLine(); // Memory Highwater
-            long epmemQueries = epmemStatsScanner.skip(".+: ").nextLong(); 
-            
-            Scanner smemTimeScanner = new Scanner(agent.ExecuteCommandLine("smem -t"));
-            // epmem and smem timers report seconds
-            double smemTimeMsec = smemTimeScanner.skip(".+: ").nextDouble() * 1000; 
+            // TODO Scanner epmemStatsScanner = new Scanner(agent.ExecuteCommandLine("epmem -S"));
+            // TODO long epmemStores = epmemStatsScanner.skip(".+: ").nextLong(); // Time == Stores (more or less)
+            // TODO epmemStatsScanner.nextLine(); // Time (Stores)
+            // TODO epmemStatsScanner.nextLine(); // SQLite version
+            // TODO long epmemAndSmemBytes = epmemStatsScanner.skip(".+: ").nextLong(); 
+            // TODO epmemStatsScanner.nextLine(); // Bytes
+            // TODO epmemStatsScanner.nextLine(); // Memory Highwater
+            // TODO long epmemQueries = epmemStatsScanner.skip(".+: ").nextLong(); 
+
+            SemanticMemory smem = (SemanticMemory)agent.getAdapter(SemanticMemory.class);
+            SemanticMemoryStatistics smemStats = smem.getStatistics();
+            double smemTimeMsec = 0; // TODO JSoar SemanticMemory does not have timers implemented yet
     
-            Scanner smemStatsScanner = new Scanner(agent.ExecuteCommandLine("smem -S"));
-            smemStatsScanner.nextLine(); // SQLite version
-            smemStatsScanner.nextLine(); // Bytes
-            smemStatsScanner.nextLine(); // Memory Highwater
-            long smemRetrieves = smemStatsScanner.skip(".+: ").nextLong();
-            smemStatsScanner.nextLine(); // Retrieves
-            long smemQueries = smemStatsScanner.skip(".+: ").nextLong();
-            smemStatsScanner.nextLine(); // Queries
-            long smemStores = smemStatsScanner.skip(".+: ").nextLong();
+            long smemRetrieves = smemStats.getRetrieves();
+            long smemQueries = smemStats.getQueries();
+            long smemStores = smemStats.getStores();
             
             double wallClock = (System.currentTimeMillis() - offset) / 1000.0;
             
@@ -578,15 +573,17 @@ public class DataCollector
             lastSmemTimeMsec = smemTimeMsec;
             double smemTimeMsecPerDc = deltaDc > 0 ? deltaSmemTimeMsec / deltaDc : 0;
 
-            double deltaEpmemTimeMsec = epmemTimeMsec - lastEpmemTimeMsec;
-            lastEpmemTimeMsec = epmemTimeMsec;
-            double epmemTimeMsecPerDc = deltaDc > 0 ? deltaEpmemTimeMsec / deltaDc : 0;
+            // TODO double deltaEpmemTimeMsec = epmemTimeMsec - lastEpmemTimeMsec;
+            // TODO lastEpmemTimeMsec = epmemTimeMsec;
+            // TODO double epmemTimeMsecPerDc = deltaDc > 0 ? deltaEpmemTimeMsec / deltaDc : 0;
             
-            String out = String.format(FORMAT, agent.GetAgentName(), wallClock, dc, deltaKmsecTime, kmsecTotalTimePerDc, 
+            String out = String.format(FORMAT, agent.getName(), wallClock, dc, deltaKmsecTime, kmsecTotalTimePerDc, 
                     deltaCpumsecTime, deltaPfCount, meanMsecPerPf, wmcount, meanWmCountPerDc, wmmax, deltaWmAdd, deltaWmRem,
-                    maxdctimec, maxdctimev, maxdcwmcc, maxdcwmcv, maxdcpfcc, maxdcpfcv,
-                    epmemTimeMsec, epmemMaxTimeCycle, epmemMaxTimeValueMsec, epmemAndSmemBytes, epmemQueries, epmemStores, epmemTimeMsecPerDc, 
-                    smemTimeMsec, smemMaxTimeCycle, smemMaxTimeValueMsec, smemRetrieves, smemQueries, smemStores, smemTimeMsecPerDc);
+                    // TODO maxdctimec, maxdctimev, maxdcwmcc, maxdcwmcv, maxdcpfcc, maxdcpfcv,
+                    // TODO epmemTimeMsec, epmemMaxTimeCycle, epmemMaxTimeValueMsec, epmemAndSmemBytes, epmemQueries, epmemStores, epmemTimeMsecPerDc, 
+                    smemTimeMsec, 
+                    // TODO smemMaxTimeCycle, smemMaxTimeValueMsec, 
+                    smemRetrieves, smemQueries, smemStores, smemTimeMsecPerDc);
             pout.print(out);
             //System.out.println(out);
             
@@ -602,7 +599,7 @@ public class DataCollector
                 pout.flush();
             }
 
-            agent.ExecuteCommandLine("stats -R"); // reset max stats
+            // TODO agent.ExecuteCommandLine("stats -R"); // reset max stats
         } 
         catch (Throwable e)
         {
@@ -628,20 +625,22 @@ public class DataCollector
         sb.append(dateFormat.format(new Date()));
         sb.append(",");
         
-        sb.append(agent.ExecuteCommandLine("learn"));
+        sb.append("Learning is " + (agent.getProperties().get(SoarProperties.LEARNING_ON) ? "enabled" : "disabled"));
         sb.append(",");
         
         sb.append("epmem learning ");
-        sb.append(agent.ExecuteCommandLine("epmem -g learning"));
+        sb.append("off");
+        // TODO sb.append(agent.ExecuteCommandLine("epmem -g learning"));
         sb.append(",");
 
         sb.append("smem learning ");
-        sb.append(agent.ExecuteCommandLine("smem -g learning"));
-        sb.append(",");
+        SemanticMemory smem = (SemanticMemory)agent.getAdapter(SemanticMemory.class);
+        sb.append(smem.smem_enabled() ? "on" : "off");
+        // TODO sb.append(",");
         
-        sb.append("epmem exclusions: [");
-        sb.append(agent.ExecuteCommandLine("epmem -g exclusions"));
-        sb.append("]");
+        // TODO sb.append("epmem exclusions: [");
+        // TODO sb.append(agent.ExecuteCommandLine("epmem -g exclusions"));
+        // TODO sb.append("]");
         
         if (additionalSettings != null)
         {

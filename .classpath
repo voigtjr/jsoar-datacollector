@@ -6,7 +6,6 @@
 	<classpathentry kind="lib" path="lib/log4j-1.2.15.jar"/>
 	<classpathentry kind="lib" path="lib/commons-logging-1.1.1.jar"/>
 	<classpathentry kind="lib" path="lib/guava-r09.jar"/>
-	<classpathentry kind="var" path="SOAR/java/sml.jar"/>
-	<classpathentry kind="var" path="SOAR/java/soar-smljava-9.3.1.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/jsoar-core"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
