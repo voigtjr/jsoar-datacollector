@@ -1,15 +1,33 @@
-soar-datacollector is a simple performance data collection utility for Soar agents.
+soar-datacollector is a simple performance data collection utility for Soar agents. soar-datacollector is a Java library that needs to be included directly in your environment to work.
 
-This project has two external dependencies:
-	sml.jar
-	soar-smljava-<version>.jar
+# Usage
 
-Need to build java_sml_misc target with scons
+TODO
+
+# Dependencies
+
+soar-datacollector needs two jars found in [Soar 9.3.1](http://soar.googlecode.com/):
+    * sml.jar
+    * soar-smljava-9.3.1.jar
+
+*The build instructions below refer to the new_build_structure branch of Soar. I will remove this message after it is merged in to the trunk.*
+
+# Building soar-smljava-VERSION.jar
+
+Note that the soar-smljava jar is not built by default, produce it by running:
+    scons java_sml_misc
 
 # Eclipse Build
 
-Edit the Java Build Path, Libraries tab, Add Variable. Configure Variables. New folder:
- * SOAR: /path/to/soar
+Eclipse project settings are distributed with this project. To build, the SOAR variable inside Eclipse's build path system must be set to the folder where Soar was built or extracted to. It will look in to the java subfolder for the two jar dependencies it needs.
+
+To set the SOAR variable, follow this path through Eclipse:
+    * soar-datacollector build path
+    * Libraries tab,
+    * Add Variable
+    * Configure Variables
+    * New Folder
+    * *SOAR*: */path/to/soar*
 
 # License
 
